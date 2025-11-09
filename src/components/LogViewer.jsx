@@ -1,69 +1,50 @@
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Filter } from 'lucide-react';
 
-const levels = ["info", "success", "error"];
-
-export default function LogViewer() {
-  const [filter, setFilter] = useState("all");
-  const [logs] = useState(() => {
-    const base = [
-      { id: 1, level: "success", message: "Token NovaCat hunted a duck", timestamp: Date.now() - 1000 * 60 },
-      { id: 2, level: "info", message: "Cycle completed (3 commands)", timestamp: Date.now() - 1000 * 120 },
-      { id: 3, level: "error", message: "Rate limited, backing off 30s", timestamp: Date.now() - 1000 * 240 },
-      { id: 4, level: "success", message: "+250 coins from beg", timestamp: Date.now() - 1000 * 500 },
-    ];
-    return base;
-  });
-
-  const filtered = useMemo(() => (filter === "all" ? logs : logs.filter((l) => l.level === filter)), [filter, logs]);
+export default function LogViewer({ logs }) {
+  const [query, setQuery] = useState('');
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return logs || [];
+    return (logs || []).filter((l) => l.message.toLowerCase().includes(q));
+  }, [logs, query]);
 
   return (
-    <div className="rounded-2xl bg-white ring-1 ring-gray-100 shadow-sm overflow-hidden">
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="font-medium text-gray-900">Activity Logs</h3>
+    <div className="rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-900 overflow-hidden">
+      <div className="px-4 py-3 border-b border-black/5 dark:border-white/10 flex items-center justify-between">
+        <div>
+          <div className="font-medium">Activity</div>
+          <div className="text-xs text-zinc-500">Real-time commands and updates</div>
+        </div>
         <div className="flex items-center gap-2">
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
-          >
-            <option value="all">All</option>
-            {levels.map((l) => (
-              <option key={l} value={l} className="capitalize">
-                {l}
-              </option>
-            ))}
-          </select>
+          <Filter size={16} className="text-zinc-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter logs"
+            className="px-3 py-2 text-sm rounded-md border border-black/10 dark:border-white/10 bg-transparent focus:outline-none"
+          />
         </div>
       </div>
-      <ul className="max-h-72 overflow-y-auto divide-y divide-gray-100">
-        {filtered.map((log) => (
-          <motion.li
-            key={log.id}
-            initial={{ opacity: 0, y: 8 }}
+
+      <div className="max-h-72 overflow-auto divide-y divide-black/5 dark:divide-white/10">
+        {filtered.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-zinc-500">No activity yet.</div>
+        )}
+        {filtered.map((log, i) => (
+          <motion.div
+            key={`${log.ts}-${i}`}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 text-sm"
+            transition={{ delay: i * 0.02 }}
+            className="px-4 py-2 text-sm"
           >
-            <div className="flex items-center justify-between">
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
-                  log.level === "success"
-                    ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                    : log.level === "error"
-                    ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
-                    : "bg-sky-50 text-sky-700 ring-1 ring-sky-200"
-                }`}
-              >
-                {log.level}
-              </span>
-              <span className="text-gray-400">
-                {new Date(log.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
-            <p className="mt-2 text-gray-700">{log.message}</p>
-          </motion.li>
+            <span className="text-zinc-500 font-mono mr-2">[{new Date(log.ts).toLocaleTimeString()}]</span>
+            <span>{log.message}</span>
+          </motion.div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
